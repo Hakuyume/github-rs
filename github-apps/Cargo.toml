@@ -6,4 +6,18 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["default-tls"]
+default-tls = ["reqwest/default-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
+
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+# https://github.com/hyperium/headers/pull/67
+hyper = { version = "0.11", default-features = false }
+jsonwebtoken = "7.2"
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+tokio = { version = "1", features = ["sync"] }
+url = { version = "2.2", features = ["serde"] }
