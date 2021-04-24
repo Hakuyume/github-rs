@@ -22,8 +22,11 @@ impl Error {
     pub(crate) async fn check_rest_api_response(response: Response) -> Result<Response, Self> {
         #[derive(Deserialize)]
         struct Payload {
+            #[serde(default)]
             message: Option<String>,
+            #[serde(default)]
             errors: Option<Vec<rest_api::ErrorObject>>,
+            #[serde(default)]
             documentation_url: Option<Url>,
         }
 
