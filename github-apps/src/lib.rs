@@ -1,5 +1,5 @@
 mod cache;
-mod error;
+pub mod error;
 
 pub use cache::Cache;
 use chrono::{DateTime, Duration, Utc};
@@ -84,7 +84,7 @@ impl App {
         client: &Client,
         installation: &Installation,
     ) -> Result<AccessToken, Error> {
-        Ok(Error::check_status(
+        Ok(Error::check_rest_api_response(
             client
                 .post(installation.access_tokens_url.clone())
                 .header(ACCEPT, "application/vnd.github.v3+json")
@@ -111,7 +111,7 @@ impl App {
             .push(owner)
             .push(repo)
             .push("installation");
-        Ok(Error::check_status(
+        Ok(Error::check_rest_api_response(
             client
                 .get(url)
                 .header(ACCEPT, "application/vnd.github.v3+json")
@@ -133,7 +133,7 @@ where
     let mut items = Vec::new();
     let mut url = Some(url);
     while let Some(u) = url.take() {
-        let response = Error::check_status(f(client.get(u))?.send().await?).await?;
+        let response = Error::check_rest_api_response(f(client.get(u))?.send().await?).await?;
         if let Some(link) = response.headers().get(LINK) {
             url = link
                 .to_str()?

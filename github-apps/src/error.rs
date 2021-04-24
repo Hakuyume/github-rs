@@ -1,15 +1,11 @@
-use reqwest::{Response, StatusCode};
+use reqwest::Response;
 use serde::Deserialize;
 use url::Url;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("[{status:?}] {message:?} ({documentation_url})")]
-    Api {
-        status: StatusCode,
-        message: String,
-        documentation_url: Url,
-    },
+    #[error(transparent)]
+    RestApi(rest_api::Error),
     #[error(transparent)]
     Hyper(#[from] hyper::Error),
     #[error(transparent)]
@@ -23,11 +19,12 @@ pub enum Error {
 }
 
 impl Error {
-    pub(crate) async fn check_status(response: Response) -> Result<Response, Self> {
+    pub(crate) async fn check_rest_api_response(response: Response) -> Result<Response, Self> {
         #[derive(Deserialize)]
         struct Payload {
-            message: String,
-            documentation_url: Url,
+            message: Option<String>,
+            errors: Option<Vec<rest_api::ErrorObject>>,
+            documentation_url: Option<Url>,
         }
 
         let status = response.status();
@@ -35,11 +32,62 @@ impl Error {
             Ok(response)
         } else {
             let payload = response.json::<Payload>().await?;
-            Err(Self::Api {
+            Err(Self::RestApi(rest_api::Error {
                 status,
                 message: payload.message,
+                errors: payload.errors,
                 documentation_url: payload.documentation_url,
-            })
+            }))
         }
     }
+}
+
+// https://docs.github.com/en/rest/overview/resources-in-the-rest-api#client-errors
+pub mod rest_api {
+    use reqwest::StatusCode;
+    use serde::Deserialize;
+    use std::error;
+    use std::fmt::{self, Display, Formatter};
+    use url::Url;
+
+    #[derive(Debug)]
+    pub struct Error {
+        pub status: StatusCode,
+        pub message: Option<String>,
+        pub errors: Option<Vec<ErrorObject>>,
+        pub documentation_url: Option<Url>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct ErrorObject {
+        pub resource: String,
+        pub field: String,
+        pub code: ErrorCode,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ErrorCode {
+        Missing,
+        MissingField,
+        Invalid,
+        AlreadyExists,
+        Unprocessable,
+        Custom,
+    }
+
+    impl Display for Error {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            write!(f, "[{}]", self.status)?;
+            if let Some(message) = &self.message {
+                write!(f, " \"{}\"", message)?;
+            }
+            if let Some(documentation_url) = &self.documentation_url {
+                write!(f, " ({})", documentation_url)?;
+            }
+            Ok(())
+        }
+    }
+
+    impl error::Error for Error {}
 }
