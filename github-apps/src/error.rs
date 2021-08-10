@@ -34,13 +34,22 @@ impl Error {
         if status.is_success() {
             Ok(response)
         } else {
-            let payload = response.json::<Payload>().await?;
-            Err(Self::RestApi(rest_api::Error {
-                status,
-                message: payload.message,
-                errors: payload.errors,
-                documentation_url: payload.documentation_url,
-            }))
+            let text = response.text().await?;
+            if let Ok(payload) = serde_json::from_str::<Payload>(&text) {
+                Err(Self::RestApi(rest_api::Error {
+                    status,
+                    message: payload.message,
+                    errors: payload.errors,
+                    documentation_url: payload.documentation_url,
+                }))
+            } else {
+                Err(Self::RestApi(rest_api::Error {
+                    status,
+                    message: Some(text),
+                    errors: None,
+                    documentation_url: None,
+                }))
+            }
         }
     }
 }
