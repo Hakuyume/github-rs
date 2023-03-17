@@ -2,7 +2,7 @@
 name = "github-apps"
 version = "0.1.0"
 authors = ["Toru Ogawa <Hakuyume@users.noreply.github.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,10 +15,10 @@ rustls-tls = ["reqwest/rustls-tls"]
 chrono = { version = "0.4", features = ["serde"] }
 # https://github.com/hyperium/headers/pull/67
 hyper = { version = "0.11", default-features = false }
-jsonwebtoken = "7.2"
+jsonwebtoken = "8"
 reqwest = { version = "0.11", default-features = false, features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
 tokio = { version = "1", features = ["sync"] }
-url = { version = "2.2", features = ["serde"] }
+url = { version = "2", features = ["serde"] }
